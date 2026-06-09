@@ -2,7 +2,7 @@ import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://travel-content-automation-agent.onrender.com",
+  baseURL: import.meta.env.VITE_API_URL || "https://travel-content-automation-agent.onrender.com/api",
 });
 
 api.interceptors.request.use(
