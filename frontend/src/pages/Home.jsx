@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@600;700&display=swap');
@@ -1080,6 +1080,28 @@ const styles = `
 
 export default function Home() {
   const navRef = useRef(null);
+  const [itinerary, setItinerary] = useState([]);
+
+  // Fallback static days shown if API is unreachable
+  const FALLBACK = [
+    { id: 1, day_label: "Day 1–2", destination: "Amsterdam",    color_class: "dest-amsterdam",    sort_order: 1, activities: ["Arrival & Canal Tour", "Van Gogh Museum", "Jordaan District Walk"] },
+    { id: 2, day_label: "Day 3",   destination: "Keukenhof",    color_class: "dest-keukenhof",    sort_order: 2, activities: ["Tulip Gardens", "Flower Exhibitions", "Dutch Countryside"] },
+    { id: 3, day_label: "Day 4",   destination: "Giethoorn",    color_class: "dest-giethoorn",    sort_order: 3, activities: ["Village Boat Tour", "Traditional Architecture", "Local Lunch"] },
+    { id: 4, day_label: "Day 5",   destination: "Scheveningen", color_class: "dest-scheveningen", sort_order: 4, activities: ["Beach & Pier", "Seafood Dining", "Coastal Views"] },
+    { id: 5, day_label: "Day 6–8", destination: "Paris",        color_class: "dest-paris",        sort_order: 5, activities: ["Eiffel Tower Visit", "Louvre Museum", "Champs-Élysées & Seine Cruise"] },
+    { id: 6, day_label: "Day 9",   destination: "Mini Europe",  color_class: "dest-mini",         sort_order: 6, activities: ["Brussels City Tour", "Mini Europe Park", "Belgian Chocolates"] },
+    { id: 7, day_label: "Day 10",  destination: "Departure",    color_class: "dest-depart",       sort_order: 7, activities: ["Last-minute Shopping", "Airport Transfer"] },
+  ];
+
+  useEffect(() => {
+    const baseUrl = import.meta.env.VITE_API_URL || "https://travel-content-automation-agent.onrender.com/api";
+    fetch(`${baseUrl}/itinerary/`)
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data) && data.length > 0) setItinerary(data); })
+      .catch(() => {/* use fallback */});
+  }, []);
+
+  const days = itinerary.length > 0 ? itinerary : FALLBACK;
 
   useEffect(() => {
     const onScroll = () => {
@@ -1234,97 +1256,34 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ITINERARY */}
+      {/* ITINERARY — dynamic from API */}
       <section className="tm-itinerary">
-        <h2>Detailed 10-Day Itinerary</h2>
+        <h2>Detailed {days.length > 0 ? `${days.reduce((acc, d) => {
+          const m = d.day_label.match(/(\d+)/g);
+          return m ? Math.max(acc, Number(m[m.length - 1])) : acc;
+        }, 0)}-Day` : "10-Day"} Itinerary</h2>
         <p>Day-by-day breakdown of your European Dream journey</p>
 
         <div className="itin-grid">
-          <div className="itin-row dest-amsterdam">
-            <div className="itin-day">
-              <span>Day 1–2</span>
-              <span>Amsterdam</span>
+          {days.map((day) => (
+            <div key={day.id} className={`itin-row ${day.color_class}`}>
+              <div className="itin-day">
+                <span>{day.day_label}</span>
+                <span>{day.destination}</span>
+              </div>
+              <div className="itin-acts">
+                {(day.activities || []).map((act, i) => (
+                  <span key={i}>{act}</span>
+                ))}
+              </div>
             </div>
-            <div className="itin-acts">
-              <span>Arrival &amp; Canal Tour</span>
-              <span>Van Gogh Museum</span>
-              <span>Jordaan District Walk</span>
-            </div>
-          </div>
-
-          <div className="itin-row dest-paris">
-            <div className="itin-day">
-              <span>Day 6–8</span>
-              <span>Paris</span>
-            </div>
-            <div className="itin-acts">
-              <span>Eiffel Tower Visit</span>
-              <span>Louvre Museum</span>
-              <span>Champs-Élysées &amp; Seine Cruise</span>
-            </div>
-          </div>
-
-          <div className="itin-row dest-keukenhof">
-            <div className="itin-day">
-              <span>Day 3</span>
-              <span>Keukenhof</span>
-            </div>
-            <div className="itin-acts">
-              <span>Tulip Gardens</span>
-              <span>Flower Exhibitions</span>
-              <span>Dutch Countryside</span>
-            </div>
-          </div>
-
-          <div className="itin-row dest-mini">
-            <div className="itin-day">
-              <span>Day 9</span>
-              <span>Mini Europe</span>
-            </div>
-            <div className="itin-acts">
-              <span>Brussels City Tour</span>
-              <span>Mini Europe Park</span>
-              <span>Belgian Chocolates</span>
-            </div>
-          </div>
-
-          <div className="itin-row dest-giethoorn">
-            <div className="itin-day">
-              <span>Day 4</span>
-              <span>Giethoorn</span>
-            </div>
-            <div className="itin-acts">
-              <span>Village Boat Tour</span>
-              <span>Traditional Architecture</span>
-              <span>Local Lunch</span>
-            </div>
-          </div>
-
-          <div className="itin-row dest-depart">
-            <div className="itin-day">
-              <span>Day 10</span>
-              <span>Departure</span>
-            </div>
-            <div className="itin-acts">
-              <span>Last-minute Shopping</span>
-              <span>Airport Transfer</span>
-            </div>
-          </div>
-
-          <div className="itin-row dest-scheveningen">
-            <div className="itin-day">
-              <span>Day 5</span>
-              <span>Scheveningen</span>
-            </div>
-            <div className="itin-acts">
-              <span>Beach &amp; Pier</span>
-              <span>Seafood Dining</span>
-              <span>Coastal Views</span>
-            </div>
-          </div>
+          ))}
 
           <div className="itin-final">
-            ✦ 10 unforgettable days across Europe ✦
+            ✦ {days.length > 0 ? `${days.reduce((acc, d) => {
+              const m = d.day_label.match(/(\d+)/g);
+              return m ? Math.max(acc, Number(m[m.length - 1])) : acc;
+            }, 0)} unforgettable days` : "10 unforgettable days"} across Europe ✦
           </div>
         </div>
       </section>

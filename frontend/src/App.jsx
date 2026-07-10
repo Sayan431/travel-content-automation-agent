@@ -9,6 +9,10 @@ import Dashboard from "./pages/Dashboard";
 import ContentReview from "./pages/ContentReview";
 import BrandSettings from "./pages/BrandSettings";
 import Blogs from "./pages/Blogs";
+import AdminUsers from "./pages/AdminUsers";
+import AdminFeeds from "./pages/AdminFeeds";
+import AdminPosts from "./pages/AdminPosts";
+import AdminItinerary from "./pages/AdminItinerary";
 
 function Private({ children }) {
   const { token } = useAuth();
@@ -39,6 +43,10 @@ function AppRoutes() {
         <Route index element={<Dashboard />} />
         <Route path="content" element={<ContentReview />} />
         <Route path="brand" element={<BrandSettings />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="feeds" element={<AdminFeeds />} />
+        <Route path="posts" element={<AdminPosts />} />
+        <Route path="itinerary" element={<AdminItinerary />} />
       </Route>
 
       <Route path="*" element={<h1 className="center">404 Not Found</h1>} />

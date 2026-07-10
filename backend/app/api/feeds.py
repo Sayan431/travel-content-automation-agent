@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -121,3 +121,24 @@ def list_feeds(db: Session = Depends(get_db)):
         .limit(100)
         .all()
     )
+
+
+@router.delete("/{feed_id}")
+def delete_feed(feed_id: int, db: Session = Depends(get_db)):
+    feed = db.query(RSSFeed).filter(RSSFeed.id == feed_id).first()
+    if not feed:
+        raise HTTPException(status_code=404, detail="Feed not found")
+    db.delete(feed)
+    db.commit()
+    return {"success": True, "message": "Feed deleted"}
+
+
+@router.patch("/{feed_id}/important")
+def toggle_important(feed_id: int, db: Session = Depends(get_db)):
+    feed = db.query(RSSFeed).filter(RSSFeed.id == feed_id).first()
+    if not feed:
+        raise HTTPException(status_code=404, detail="Feed not found")
+    feed.important = not feed.important
+    db.commit()
+    db.refresh(feed)
+    return {"id": feed.id, "important": feed.important}

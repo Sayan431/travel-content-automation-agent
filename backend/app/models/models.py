@@ -82,3 +82,13 @@ class ApprovalLog(Base, TimestampMixin):
     action = Column(String(80))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     note = Column(Text)
+
+class ItineraryDay(Base, TimestampMixin):
+    __tablename__ = "itinerary_days"
+    id = Column(Integer, primary_key=True)
+    day_label = Column(String(40), nullable=False)          # "Day 1–2"
+    destination = Column(String(120), nullable=False)       # "Amsterdam"
+    activities = Column(JSON, default=list)                 # ["Canal Tour", "Van Gogh"]
+    color_class = Column(String(60), default="dest-amsterdam")  # CSS class
+    sort_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)

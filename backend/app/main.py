@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import Base, engine, SessionLocal
 from app.models.models import *
-from app.api import auth, feeds, content, brand, analytics
+from app.api import auth, feeds, content, brand, analytics, users, itinerary
 from app.scheduler.jobs import start_scheduler
 from app.core.security import hash_password
 from app.models.models import User, BrandSetting
@@ -28,6 +28,8 @@ app.include_router(feeds.router, prefix="/api")
 app.include_router(content.router, prefix="/api")
 app.include_router(brand.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
+app.include_router(users.router, prefix="/api")
+app.include_router(itinerary.router, prefix="/api")
 
 
 @app.on_event("startup")

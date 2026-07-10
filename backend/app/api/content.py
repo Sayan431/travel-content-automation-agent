@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.models import GeneratedContent, ApprovalLog
 from app.services.social_service import auto_post_content
+from app.schemas.schemas import ContentUpdate
 
 router = APIRouter(prefix="/content", tags=["Content"])
 
@@ -156,3 +157,26 @@ def reject_content(content_id: int, db: Session = Depends(get_db)):
         "success": True,
         "message": "Selected blog rejected successfully",
     }
+
+
+@router.get("/{content_id}")
+def get_content(content_id: int, db: Session = Depends(get_db)):
+    content = db.query(GeneratedContent).filter(GeneratedContent.id == content_id).first()
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+    return content
+
+
+@router.put("/{content_id}")
+def update_content(content_id: int, payload: ContentUpdate, db: Session = Depends(get_db)):
+    content = db.query(GeneratedContent).filter(GeneratedContent.id == content_id).first()
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(content, field, value)
+
+    db.commit()
+    db.refresh(content)
+    return content

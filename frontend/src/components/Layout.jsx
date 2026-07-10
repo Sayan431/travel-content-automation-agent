@@ -20,7 +20,11 @@ export default function Layout() {
   const navItems = [
     { to: "/admin", label: "Dashboard", icon: "ti-layout-dashboard" },
     { to: "/admin/content", label: "Content Review", icon: "ti-file-text" },
+    { to: "/admin/posts", label: "All Posts", icon: "ti-news" },
+    { to: "/admin/feeds", label: "Manage Feeds", icon: "ti-rss" },
+    { to: "/admin/itinerary", label: "Itinerary", icon: "ti-map" },
     { to: "/admin/brand", label: "Brand Settings", icon: "ti-palette" },
+    { to: "/admin/users", label: "Users", icon: "ti-users" },
   ];
 
   const pageLabel = navItems.find((n) => n.to === location.pathname)?.label || "Dashboard";

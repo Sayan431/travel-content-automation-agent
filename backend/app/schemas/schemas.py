@@ -1,11 +1,33 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, Any
+from pydantic import ConfigDict
+from typing import Optional, Any, List
+from datetime import datetime
 
 class UserCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
     role: str = "reviewer"
+
+class AdminUserCreate(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    role: str = "reviewer"
+
+class UserOut(BaseModel):
+    id: int
+    name: str
+    email: str
+    role: str
+    is_active: bool
+    created_at: Optional[datetime] = None
+    class Config: from_attributes = True
+
+class UserPatch(BaseModel):
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+    name: Optional[str] = None
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -29,6 +51,7 @@ class FeedOut(BaseModel):
     published_date: Optional[str]
     status: str
     important: bool
+    created_at: Optional[datetime] = None
     class Config: from_attributes = True
 
 class FeedUpdate(BaseModel):
@@ -47,6 +70,7 @@ class BrandIn(BaseModel):
 
 class ContentUpdate(BaseModel):
     blog_title: Optional[str] = None
+    slug: Optional[str] = None
     meta_description: Optional[str] = None
     article: Optional[str] = None
     instagram_caption: Optional[str] = None
@@ -62,3 +86,21 @@ class SocialPostIn(BaseModel):
     platform: str
     body: str
     mode: str = "manual"
+
+class ItineraryDayIn(BaseModel):
+    day_label: str
+    destination: str
+    activities: List[str] = []
+    color_class: str = "dest-amsterdam"
+    sort_order: int = 0
+    is_active: bool = True
+
+class ItineraryDayOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    day_label: str
+    destination: str
+    activities: Optional[List[str]] = []
+    color_class: str
+    sort_order: int
+    is_active: bool

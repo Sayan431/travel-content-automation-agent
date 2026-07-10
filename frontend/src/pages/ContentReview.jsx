@@ -272,6 +272,8 @@ export default function ContentReview() {
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [actionId, setActionId] = useState(null);
+  const [editMap, setEditMap] = useState({}); // { [contentId]: draftObject | null }
+  const [savingId, setSavingId] = useState(null);
 
   const load = async () => {
     try {
@@ -291,13 +293,10 @@ export default function ContentReview() {
   const fetchAndGenerate = async () => {
     try {
       setFetching(true);
-
       const res = await api.post("/feeds/fetch");
-
       alert(
         `Fetched ${res.data.new_articles} new articles and generated ${res.data.generated_content} AI blogs.`
       );
-
       await load();
     } catch (error) {
       alert("RSS fetch and AI blog generation failed.");
@@ -306,14 +305,56 @@ export default function ContentReview() {
     }
   };
 
+  const startEdit = (content) => {
+    setEditMap((prev) => ({
+      ...prev,
+      [content.id]: {
+        blog_title: content.blog_title || "",
+        slug: content.slug || "",
+        meta_description: content.meta_description || "",
+        article: content.article || "",
+        instagram_caption: content.instagram_caption || "",
+        facebook_post: content.facebook_post || "",
+        linkedin_post: content.linkedin_post || "",
+        hashtags: content.hashtags || "",
+        cta: content.cta || "",
+      },
+    }));
+  };
+
+  const cancelEdit = (id) => {
+    setEditMap((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  };
+
+  const updateDraft = (id, field, value) => {
+    setEditMap((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: value },
+    }));
+  };
+
+  const saveEdit = async (id) => {
+    try {
+      setSavingId(id);
+      await api.put(`/content/${id}`, editMap[id]);
+      cancelEdit(id);
+      await load();
+    } catch (error) {
+      alert("Failed to save changes.");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   const accept = async (id) => {
     try {
       setActionId(id);
-
       await api.post(`/content/${id}/accept`);
-
       await load();
-
       alert("Selected blog approved and posted successfully.");
     } catch (error) {
       alert("Accept/post failed.");
@@ -325,11 +366,8 @@ export default function ContentReview() {
   const reject = async (id) => {
     try {
       setActionId(id);
-
       await api.post(`/content/${id}/reject`);
-
       await load();
-
       alert("Selected blog rejected.");
     } catch (error) {
       alert("Reject failed.");
@@ -349,10 +387,9 @@ export default function ContentReview() {
           <p className="eyebrow">AI Travel Content Review</p>
           <h1>Generated Travel Blogs</h1>
           <p>
-            Fetch latest travel news, auto-generate AI blogs, then accept or reject each post.
+            Fetch latest travel news, auto-generate AI blogs, then edit, accept or reject each post.
           </p>
         </div>
-
         <button type="button" onClick={fetchAndGenerate} disabled={fetching}>
           {fetching ? "Fetching & Generating..." : "Fetch RSS & Generate Blogs"}
         </button>
@@ -361,12 +398,14 @@ export default function ContentReview() {
       {items.length === 0 ? (
         <div className="card empty-state">
           <h2>No pending blogs</h2>
-          <p>Click “Fetch RSS & Generate Blogs” to create fresh AI travel content.</p>
+          <p>Click "Fetch RSS & Generate Blogs" to create fresh AI travel content.</p>
         </div>
       ) : (
         <div className="review-list">
           {items.map((content) => {
             const blogImage = getRelatedBlogImage(content);
+            const draft = editMap[content.id];
+            const isEditing = Boolean(draft);
 
             return (
               <div className="card blog-review-card" key={content.id}>
@@ -392,77 +431,186 @@ export default function ContentReview() {
                   }}
                 >
                   <span>TRAVEL CONTENT</span>
-                  <h2>{content.blog_title}</h2>
+                  <h2>{isEditing ? draft.blog_title || content.blog_title : content.blog_title}</h2>
                 </div>
 
                 <StatusBadge status={content.status} />
 
+                {/* ── EDIT TOGGLE BAR ── */}
+                <div className="edit-toolbar">
+                  {isEditing ? (
+                    <>
+                      <button
+                        type="button"
+                        className="btn-edit-save"
+                        disabled={savingId === content.id}
+                        onClick={() => saveEdit(content.id)}
+                      >
+                        <i className="ti ti-device-floppy" />
+                        {savingId === content.id ? "Saving..." : "Save Changes"}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-edit-cancel"
+                        onClick={() => cancelEdit(content.id)}
+                      >
+                        <i className="ti ti-x" /> Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn-edit-toggle"
+                      onClick={() => startEdit(content)}
+                    >
+                      <i className="ti ti-pencil" /> Edit Content
+                    </button>
+                  )}
+                </div>
+
+                {/* ── SEO ── */}
                 <section className="blog-section">
                   <h3>SEO Details</h3>
-                  <p>
-                    <b>Slug:</b> {content.slug}
-                  </p>
-                  <p>
-                    <b>Meta Description:</b> {content.meta_description}
-                  </p>
+                  {isEditing ? (
+                    <div className="edit-fields">
+                      <label>
+                        <span>Title</span>
+                        <input
+                          className="edit-input"
+                          value={draft.blog_title}
+                          onChange={(e) => updateDraft(content.id, "blog_title", e.target.value)}
+                        />
+                      </label>
+                      <label>
+                        <span>Slug</span>
+                        <input
+                          className="edit-input"
+                          value={draft.slug}
+                          onChange={(e) => updateDraft(content.id, "slug", e.target.value)}
+                        />
+                      </label>
+                      <label>
+                        <span>Meta Description</span>
+                        <input
+                          className="edit-input"
+                          value={draft.meta_description}
+                          onChange={(e) => updateDraft(content.id, "meta_description", e.target.value)}
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <>
+                      <p><b>Slug:</b> {content.slug}</p>
+                      <p><b>Meta Description:</b> {content.meta_description}</p>
+                    </>
+                  )}
                 </section>
 
+                {/* ── ARTICLE ── */}
                 <section className="blog-section">
                   <h3>Generated Blog</h3>
-
-                  <article className="formatted-blog">
-                    {(content.article || "")
-                      .split("\n")
-                      .filter((paragraph) => paragraph.trim() !== "")
-                      .map((paragraph, index) => (
-                        <p key={index}>{paragraph}</p>
-                      ))}
-                  </article>
+                  {isEditing ? (
+                    <label>
+                      <textarea
+                        className="edit-textarea"
+                        rows={14}
+                        value={draft.article}
+                        onChange={(e) => updateDraft(content.id, "article", e.target.value)}
+                      />
+                    </label>
+                  ) : (
+                    <article className="formatted-blog">
+                      {(content.article || "")
+                        .split("\n")
+                        .filter((p) => p.trim() !== "")
+                        .map((p, i) => <p key={i}>{p}</p>)}
+                    </article>
+                  )}
                 </section>
 
+                {/* ── SOCIAL ── */}
                 <section className="blog-section">
                   <h3>Social Media Ready Posts</h3>
-
-                  <div className="social-grid">
-                    <div>
-                      <h4>Instagram</h4>
-                      <p>{content.instagram_caption}</p>
+                  {isEditing ? (
+                    <div className="edit-fields">
+                      <label>
+                        <span>Instagram Caption</span>
+                        <textarea
+                          className="edit-textarea"
+                          rows={4}
+                          value={draft.instagram_caption}
+                          onChange={(e) => updateDraft(content.id, "instagram_caption", e.target.value)}
+                        />
+                      </label>
+                      <label>
+                        <span>Facebook Post</span>
+                        <textarea
+                          className="edit-textarea"
+                          rows={4}
+                          value={draft.facebook_post}
+                          onChange={(e) => updateDraft(content.id, "facebook_post", e.target.value)}
+                        />
+                      </label>
+                      <label>
+                        <span>LinkedIn Post</span>
+                        <textarea
+                          className="edit-textarea"
+                          rows={4}
+                          value={draft.linkedin_post}
+                          onChange={(e) => updateDraft(content.id, "linkedin_post", e.target.value)}
+                        />
+                      </label>
                     </div>
-
-                    <div>
-                      <h4>Facebook</h4>
-                      <p>{content.facebook_post}</p>
+                  ) : (
+                    <div className="social-grid">
+                      <div><h4>Instagram</h4><p>{content.instagram_caption}</p></div>
+                      <div><h4>Facebook</h4><p>{content.facebook_post}</p></div>
+                      <div><h4>LinkedIn</h4><p>{content.linkedin_post}</p></div>
                     </div>
-
-                    <div>
-                      <h4>LinkedIn</h4>
-                      <p>{content.linkedin_post}</p>
-                    </div>
-                  </div>
+                  )}
                 </section>
 
+                {/* ── HASHTAGS & CTA ── */}
                 <section className="blog-section">
-                  <p>
-                    <b>Hashtags:</b> {content.hashtags}
-                  </p>
-                  <p>
-                    <b>CTA:</b> {content.cta}
-                  </p>
+                  {isEditing ? (
+                    <div className="edit-fields">
+                      <label>
+                        <span>Hashtags</span>
+                        <input
+                          className="edit-input"
+                          value={draft.hashtags}
+                          onChange={(e) => updateDraft(content.id, "hashtags", e.target.value)}
+                        />
+                      </label>
+                      <label>
+                        <span>CTA</span>
+                        <input
+                          className="edit-input"
+                          value={draft.cta}
+                          onChange={(e) => updateDraft(content.id, "cta", e.target.value)}
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <>
+                      <p><b>Hashtags:</b> {content.hashtags}</p>
+                      <p><b>CTA:</b> {content.cta}</p>
+                    </>
+                  )}
                 </section>
 
                 <div className="actions">
                   <button
                     type="button"
-                    disabled={actionId === content.id}
+                    disabled={actionId === content.id || isEditing}
                     onClick={() => accept(content.id)}
                   >
                     {actionId === content.id ? "Posting..." : "Accept & Auto Post"}
                   </button>
-
                   <button
                     type="button"
                     className="danger"
-                    disabled={actionId === content.id}
+                    disabled={actionId === content.id || isEditing}
                     onClick={() => reject(content.id)}
                   >
                     Reject
@@ -476,6 +624,7 @@ export default function ContentReview() {
     </>
   );
 }
+
 
 
 
